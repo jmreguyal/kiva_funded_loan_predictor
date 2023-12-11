@@ -3,6 +3,7 @@ import pandas as pd
 import joblib
 import numpy as np
 from xgboost import XGBClassifier
+from sklearn.neighbors import NearestNeighbors
 # from openai import OpenAI
 # import openai
 
