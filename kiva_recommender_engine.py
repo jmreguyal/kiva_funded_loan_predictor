@@ -3,10 +3,22 @@ import pandas as pd
 import joblib
 import numpy as np
 from xgboost import XGBClassifier
+# from openai import OpenAI
+# import openai
 
-# Loading .joblib file
+# Loading .joblib and funded loans file
 model = joblib.load('kiva_model_xgb.joblib')
+recommender = joblib.load('kiva_recommender_2.joblib')
+funded_loans_only = pd.read_csv('funded_loans_ph_original.csv')
 
+# Text variables
+app_description = 'Boost your Kiva loan success with Ka-a-Kiva-t – the ultimate companion app. Unlock funding potential through personalized tips and analytics, ensuring your loans receive the attention they deserve.'
+similar_funded_loans_description = 'Here are 5 similar loans that were funded given the loan characteristics input:'
+
+# client = OpenAI(
+# # defaults to os.environ.get("OPENAI_API_KEY")
+# api_key='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',
+# )
 
 def repayment_term_16_mos_and_above_value(repayment_term_16_mos_and_above_choice):
     if repayment_term_16_mos_and_above_choice == 'Yes':
@@ -86,16 +98,70 @@ def prediction_value(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p):
     prediction = model.predict([[a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p]])
     
     if prediction[0] == 1:
-        prediction_text = 'The loan is funded'
+        prediction_text = 'Result: The loan is funded'
     else:
-        prediction_text = 'The loan is not funded'
+        prediction_text = 'Result: The loan is not funded'
     
     return prediction_text
+
+def recommended_loans(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p):
+    user_input = [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p]
+    user_input_array = np.array(user_input)
+
+    _, recommendations = recommender.kneighbors(user_input_array.reshape(1, -1), n_neighbors=5)
+
+    reco = recommendations[0].tolist()
+    funded_reco = pd.DataFrame()
+
+    for x in reco:
+        funded_reco = funded_reco.append(funded_loans_only.loc[x], ignore_index=True)
     
+    return funded_reco
+
+# # Recommendation Function
+# def get_gpt_recommendation(comments):
+#     reco_prompt = f"""Synthesize the main takeaways from the following and provide recommendations for our borrower 
+#     with the following similar loans: {comments} 
+# """
+#     # st.write(reco_prompt)
+#     response = client.chat.completions.create(
+#         model="gpt-3.5-turbo",
+#         messages=[
+#             {
+#                 "role": "system",
+#                 "content": "You are a helpful assistant and expert in giving out loans to borrowers."
+#             },
+#             {
+#                 "role": "user",
+#                 "content": reco_prompt
+#             }
+#         ]
+#     )
+#     # st.write(response.choices[0].message['content'].strip())
+#     return response.choices[0].message.content.strip()
+
+
+def on_button_click(prediction_text, similar_funded_loans):
+    # Centered and bigger text using Markdown and HTML
+    centered_and_bigger_text = f"<h1 style='text-align: center; color: black;'>{prediction_text}</h1>"
+
+    # Display the centered and bigger text
+    st.markdown(centered_and_bigger_text, unsafe_allow_html=True)
+
+    # Display 5 funded loans that have similar characteristics to the user's input
+    st.markdown(f"<p style='font-size: 18px;'>{similar_funded_loans_description}</p>", unsafe_allow_html=True)
+    st.dataframe(similar_funded_loans)
+
+    # # Summarized
+    # csv_string = similar_funded_loans.to_csv(index=False)
+    # summary_info = get_gpt_recommendation(csv_string)
+    # st.text(summary_info)
 
 def main():
     # Streamlit app title
-    st.title('KIVA Loan Predictor')
+    st.markdown("<h1 style='color: #2aa967; text-align: center;'>Ka-a-KIVA-t</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color: black; text-align: justify; font-size: 24px;'>{app_description}</h3>", unsafe_allow_html=True)
+    st.markdown("<hr>", unsafe_allow_html=True)
 
             # "loan_amount",
             # "repayment_term_16_mos_and_above",
@@ -109,14 +175,21 @@ def main():
             # 'sector_name_Health', 'sector_name_Housing', 'sector_name_Manufacturing',
             # 'sector_name_Personal_Use', 'sector_name_Retail', 'sector_name_Services'
 
-    # User inputs
-    loan_amount = st.number_input(label = 'Enter loan amount:')
-    repayment_term_16_mos_and_above_choice = st.selectbox('Is the repayment 16 months and above?:', ['Yes', 'No'])
-    partner_covers_currency_loss_choice = st.selectbox('Does partner cover currency loss?:', ['Yes', 'No'])
-    with_image_choice = st.selectbox('Do they have an image uploaded with the loan?:', ['Yes', 'No'])
-    with_video_choice = st.selectbox('Do they have a video uploaded with the loan?:', ['Yes', 'No'])
-    repayment_interval_choice = st.selectbox('What is the repayment interval?:', ['Irregular', 'Monthly'])
-    sector_name_choice = st.selectbox('What sector is the loan a part of?:', ['Arts', 'Construction', 'Education', 'Health', 'Housing', 'Manufacturing', 'Personal Use', 'Retail', 'Services'])
+    # User Inputs
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.header("Numerical Inputs:")
+        loan_amount = st.number_input(label = 'Enter loan amount:')
+
+    with col2:
+        st.header("Categorical Inputs:")
+        repayment_term_16_mos_and_above_choice = st.selectbox('Is the repayment 16 months and above?:', ['Yes', 'No'])
+        partner_covers_currency_loss_choice = st.selectbox('Does partner cover currency loss?:', ['Yes', 'No'])
+        with_image_choice = st.selectbox('Do they have an image uploaded with the loan?:', ['Yes', 'No'])
+        with_video_choice = st.selectbox('Do they have a video uploaded with the loan?:', ['Yes', 'No'])
+        repayment_interval_choice = st.selectbox('What is the repayment interval?:', ['Irregular', 'Monthly'])
+        sector_name_choice = st.selectbox('What sector is the loan a part of?:', ['Arts', 'Construction', 'Education', 'Health', 'Housing', 'Manufacturing', 'Personal Use', 'Retail', 'Services'])
 
     # Giving categorical variables a value based on user's input
     repayment_term_16_mos_and_above = repayment_term_16_mos_and_above_value(repayment_term_16_mos_and_above_choice)
@@ -128,7 +201,22 @@ def main():
 
     # Getting prediction
     prediction_text = prediction_value(loan_amount, repayment_term_16_mos_and_above, partner_covers_currency_loss, with_image, with_video, repayment_interval_irregular, repayment_interval_monthly, sector_name_Arts, sector_name_Construction, sector_name_Education, sector_name_Health, sector_name_Housing, sector_name_Manufacturing, sector_name_Personal_Use, sector_name_Retail, sector_name_Services)
-    st.text(prediction_text)
+    similar_funded_loans = recommended_loans(loan_amount, repayment_term_16_mos_and_above, partner_covers_currency_loss, with_image, with_video, repayment_interval_irregular, repayment_interval_monthly, sector_name_Arts, sector_name_Construction, sector_name_Education, sector_name_Health, sector_name_Housing, sector_name_Manufacturing, sector_name_Personal_Use, sector_name_Retail, sector_name_Services)
+
+    col3, col4, col5 = st.columns([1,2,1])
+    # Button to check whether loan is funded or not
+    with col3:
+        pass
+    with col4:
+        predict_button = st.button("Click me to see if loan is funded or not")
+    with col5:
+        pass
+    
+    if predict_button:
+        on_button_click(prediction_text, similar_funded_loans)
+    # if st.button("Click me to see if the loan is funded or not"):
+    #     on_button_click(prediction_text, similar_funded_loans)
+
 
 if __name__ == "__main__":
     main()
