@@ -4,8 +4,8 @@ import joblib
 import numpy as np
 from xgboost import XGBClassifier
 from sklearn.neighbors import NearestNeighbors
-# from openai import OpenAI
-# import openai
+from openai import OpenAI
+import openai
 
 # Loading .joblib and funded loans file
 model = joblib.load('kiva_model_xgb.joblib')
@@ -15,10 +15,11 @@ funded_loans_only = pd.read_csv('funded_loans_ph_original.csv')
 # Text variables
 app_description = 'Boost your Kiva loan success with Ka-a-Kiva-t – the ultimate companion app. Unlock funding potential through personalized tips and analytics, ensuring your loans receive the attention they deserve.'
 similar_funded_loans_description = 'Here are 5 similar loans that were funded given the loan characteristics input:'
+summary_description = 'Here is the summary of the 5 similar loans:'
 
 # client = OpenAI(
 # # defaults to os.environ.get("OPENAI_API_KEY")
-# api_key='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',
+# api_key='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',
 # )
 
 def repayment_term_16_mos_and_above_value(repayment_term_16_mos_and_above_choice):
@@ -116,7 +117,7 @@ def recommended_loans(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p):
 
     for x in reco:
         funded_reco = funded_reco.append(funded_loans_only.loc[x], ignore_index=True)
-    
+
     return funded_reco
 
 # # Recommendation Function
@@ -150,8 +151,27 @@ def on_button_click(prediction_text, similar_funded_loans):
     st.markdown(centered_and_bigger_text, unsafe_allow_html=True)
 
     # Display 5 funded loans that have similar characteristics to the user's input
-    st.markdown(f"<p style='font-size: 18px;'>{similar_funded_loans_description}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 22px;'>{similar_funded_loans_description}</p>", unsafe_allow_html=True)
     st.dataframe(similar_funded_loans)
+
+    # Manual text summary
+    loan_amount_avg = similar_funded_loans['loan_amount'].mean()
+    num_days_to_fund_avg = similar_funded_loans['num_days_to_fully_fund'].mean()
+    sector_mode = similar_funded_loans['sector_name'].value_counts().idxmax()
+    repayment_interval_mode = similar_funded_loans['repayment_interval'].value_counts().idxmax()
+    with_image_mode = similar_funded_loans['with_image'].value_counts().idxmax()
+
+    if with_image_mode == 1:
+        with_image_text = 'Most of the loans have an image attached to them.'
+    else:
+        with_image_text = 'Most of the loans do not have an image attached to them.'
+
+    st.markdown(f"<p style='font-size: 22px;'>{summary_description}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 16px;'>1. The average loan amount for the loans are {loan_amount_avg}.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 16px;'>2. The average number of days to fund the loans are {num_days_to_fund_avg}.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 16px;'>3. The most common sector among the loans is '{sector_mode}'.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 16px;'>4. The most common repayment interval is {repayment_interval_mode}.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 16px;'>5. {with_image_text}</p>", unsafe_allow_html=True)
 
     # # Summarized
     # csv_string = similar_funded_loans.to_csv(index=False)
@@ -215,8 +235,6 @@ def main():
     
     if predict_button:
         on_button_click(prediction_text, similar_funded_loans)
-    # if st.button("Click me to see if the loan is funded or not"):
-    #     on_button_click(prediction_text, similar_funded_loans)
 
 
 if __name__ == "__main__":
