@@ -4,8 +4,8 @@ import joblib
 import numpy as np
 from xgboost import XGBClassifier
 from sklearn.neighbors import NearestNeighbors
-from openai import OpenAI
-import openai
+# from openai import OpenAI
+# import openai
 
 # Loading .joblib and funded loans file
 model = joblib.load('kiva_model_xgb.joblib')
