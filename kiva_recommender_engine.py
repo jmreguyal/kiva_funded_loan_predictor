@@ -4,8 +4,6 @@ import joblib
 import numpy as np
 from xgboost import XGBClassifier
 from sklearn.neighbors import NearestNeighbors
-# from openai import OpenAI
-# import openai
 
 # Loading .joblib and funded loans file
 model = joblib.load('kiva_model_xgb.joblib')
@@ -17,11 +15,7 @@ app_description = 'Boost your Kiva loan success with Ka-a-Kiva-t – the ultimat
 similar_funded_loans_description = 'Here are 5 similar loans that were funded given the loan characteristics input:'
 summary_description = 'Here is the summary of the 5 similar loans:'
 
-# client = OpenAI(
-# # defaults to os.environ.get("OPENAI_API_KEY")
-# api_key='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',
-# )
-
+# Functions used
 def repayment_term_16_mos_and_above_value(repayment_term_16_mos_and_above_choice):
     if repayment_term_16_mos_and_above_choice == 'Yes':
         repayment_term_16_mos_and_above = 1
@@ -120,29 +114,6 @@ def recommended_loans(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p):
 
     return funded_reco
 
-# # Recommendation Function
-# def get_gpt_recommendation(comments):
-#     reco_prompt = f"""Synthesize the main takeaways from the following and provide recommendations for our borrower 
-#     with the following similar loans: {comments} 
-# """
-#     # st.write(reco_prompt)
-#     response = client.chat.completions.create(
-#         model="gpt-3.5-turbo",
-#         messages=[
-#             {
-#                 "role": "system",
-#                 "content": "You are a helpful assistant and expert in giving out loans to borrowers."
-#             },
-#             {
-#                 "role": "user",
-#                 "content": reco_prompt
-#             }
-#         ]
-#     )
-#     # st.write(response.choices[0].message['content'].strip())
-#     return response.choices[0].message.content.strip()
-
-
 def on_button_click(prediction_text, similar_funded_loans):
     # Centered and bigger text using Markdown and HTML
     centered_and_bigger_text = f"<h1 style='text-align: center; color: black;'>{prediction_text}</h1>"
@@ -173,10 +144,6 @@ def on_button_click(prediction_text, similar_funded_loans):
     st.markdown(f"<p style='font-size: 16px;'>4. The most common repayment interval is {repayment_interval_mode}.</p>", unsafe_allow_html=True)
     st.markdown(f"<p style='font-size: 16px;'>5. {with_image_text}</p>", unsafe_allow_html=True)
 
-    # # Summarized
-    # csv_string = similar_funded_loans.to_csv(index=False)
-    # summary_info = get_gpt_recommendation(csv_string)
-    # st.text(summary_info)
 
 def main():
     # Streamlit app title
@@ -184,6 +151,7 @@ def main():
     st.markdown(f"<h3 style='color: black; text-align: justify; font-size: 24px;'>{app_description}</h3>", unsafe_allow_html=True)
     st.markdown("<hr>", unsafe_allow_html=True)
 
+        # Variable order in model
             # "loan_amount",
             # "repayment_term_16_mos_and_above",
             # "partner_covers_currency_loss",
@@ -224,8 +192,9 @@ def main():
     prediction_text = prediction_value(loan_amount, repayment_term_16_mos_and_above, partner_covers_currency_loss, with_image, with_video, repayment_interval_irregular, repayment_interval_monthly, sector_name_Arts, sector_name_Construction, sector_name_Education, sector_name_Health, sector_name_Housing, sector_name_Manufacturing, sector_name_Personal_Use, sector_name_Retail, sector_name_Services)
     similar_funded_loans = recommended_loans(loan_amount, repayment_term_16_mos_and_above, partner_covers_currency_loss, with_image, with_video, repayment_interval_irregular, repayment_interval_monthly, sector_name_Arts, sector_name_Construction, sector_name_Education, sector_name_Health, sector_name_Housing, sector_name_Manufacturing, sector_name_Personal_Use, sector_name_Retail, sector_name_Services)
 
-    col3, col4, col5 = st.columns([1,2,1])
     # Button to check whether loan is funded or not
+    col3, col4, col5 = st.columns([1,2,1])
+    
     with col3:
         pass
     with col4:
